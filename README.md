@@ -1,6 +1,6 @@
 # Kane CLI: The Assurance Lifecycle
 
-A minimal end-to-end demonstration of the **Kane CLI assurance lifecycle**: transforming a plain-language product specification into reviewed, traceable, and executable tests.
+An end-to-end demonstration of the **Kane CLI assurance lifecycle**: transforming a plain-language product specification into reviewed, traceable, and executable tests.
 
 Starting from a feature specification, this repository demonstrates how Kane CLI can:
 
