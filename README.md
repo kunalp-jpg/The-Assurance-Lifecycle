@@ -135,6 +135,9 @@ Run individual tests:
 
 ```bash
 kane-cli testmd run tests/<test-file>.md
+
+#For instance
+kane-cli testmd run tests/standard-user-reaches-the-products-page-after-login_test.md
 ```
 
 The test is authored and executed against SauceDemo using Chrome.
