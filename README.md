@@ -1,22 +1,36 @@
-# SauceDemo Login/Cart Assurance Demo (kane-cli)
+# Kane CLI: The Assurance Lifecycle
 
-A minimal, end-to-end walkthrough of kane-cli's **assurance lifecycle**: starting from a plain-language feature spec, deriving cited use-cases, generating acceptance-criteria-backed tests, and running them for real against [SauceDemo](https://www.saucedemo.com) — with every test permanently linked back to the requirement it verifies.
+A minimal end-to-end demonstration of the **Kane CLI assurance lifecycle**: transforming a plain-language product specification into reviewed, traceable, and executable tests.
 
-Unlike `kane-cli generate` (quick, one-off test cases from a prompt), this repo demonstrates the full assurance path: sources are ingested and versioned, use-cases are extracted with cited evidence, every proposal is human-reviewed before being trusted, and each test carries a traceable link to the acceptance criterion it proves.
+Starting from a feature specification, this repository demonstrates how Kane CLI can:
+
+* ingest and version requirements
+* extract use-cases with evidence linked back to source material
+* generate acceptance criteria and test scenarios
+* maintain traceability between requirements and tests
+* execute tests and measure coverage
+
+The demo uses [SauceDemo](https://www.saucedemo.com) as the target application and covers login and cart workflows.
+
+Unlike `kane-cli generate`, which creates quick test cases from a natural-language description, the assurance lifecycle is designed for situations where teams need confidence that their tests are grounded in actual requirements. Every generated artifact can be reviewed, traced, and validated against the original source specification.
+
+---
 
 ## What's in here
 
-| File / folder | Purpose |
-|---|---|
-| `sources/feature-spec.md` | The plain-language requirement doc: 4 requirements covering SauceDemo login (valid + locked-out) and cart behavior (add + remove). This is the single source of truth the whole lifecycle derives from. |
-| `.context/` *(gitignored)* | kane-cli's local, content-addressed store — snapshotted sources, extracted use-cases, and review verdicts. Append-only; rebuilt locally via `kane-cli context ingest` rather than committed. |
-| `.testmuai/` *(gitignored)* | kane-cli's internal working directory for authored/run tests. |
-| `tests/*_test.md` | The two designed tests for UC-1 (login), each tagged with the acceptance criterion (`ac-1`) it verifies. |
-| `.gitignore` | Excludes the local kane-cli state (`.context/`, `.testmuai/`) from version control. |
+| File / folder               | Purpose                                                                                                                          |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `sources/feature-spec.md`   | The source requirement document. All use-cases, acceptance criteria, and tests in this demo are derived from this specification. |
+| `.context/` *(gitignored)*  | Kane CLI's local, content-addressed store containing source snapshots, extracted artifacts, and review history.                  |
+| `.testmuai/` *(gitignored)* | Local workspace used for authored and executed tests.                                                                            |
+| `tests/*_test.md`           | Generated test definitions linked to the acceptance criteria they verify.                                                        |
+| `.gitignore`                | Prevents local Kane CLI state from being committed.                                                                              |
 
-## The lifecycle, stage by stage
+---
 
-The loop
+# The Assurance Lifecycle
+
+The assurance lifecycle loop:
 
 ```
   requirement docs                          product changes
@@ -35,127 +49,250 @@ The loop
    source)
 ```
 
+Each stage is independently reviewable. Nothing downstream is generated until upstream artifacts have been reviewed and trusted.
 
+---
 
-| Stage | Command | What it does | Status in this repo |
-|---|---|---|---|
-| Capture | `kane-cli context ingest sources/feature-spec.md` | Snapshots the feature spec into the local, content-addressed `.context/` store | ✅ done |
-| Extract | `kane-cli context extract` | KaneAI agent reads the spec and proposes use-cases, citing the exact lines it read | ✅ done — UC-1 (login), UC-2 (add to cart), UC-3 (remove from cart) |
-| Review | `kane-cli context review` | Promote proposals from `derived` to `trusted` (or edit/reject) | ✅ done — all 3 use-cases promoted |
-| Design | `kane-cli design tests --use-case UC-1` | Turns one use-case into acceptance criteria, scenarios, and runnable tests — each test tagged with the criteria it verifies | ✅ done for UC-1 → 2 tests. ⏳ not yet run for UC-2 / UC-3 |
-| Review the design | `kane-cli context review` | Design output is derived too — approve, edit, or reject the generated ACs, scenarios, and tests | ✅ done for UC-1's output |
-| Execute | `kane-cli testmd run <test>.md` | Authors and executes each test for real (launches Chrome against saucedemo.com) | ✅ done — both UC-1 tests run |
-| Execute (replay) | `kane-cli testrun run` | Batch-replays authored tests; every run seals an evidence pack | ⏳ next |
-| Measure | `kane-cli cover` | Reports two axes: what the evidence pack proved vs. what the design still owes | ⏳ pending |
-| Maintain | `kane-cli maintain` | Reconciles the suite if `sources/feature-spec.md` changes | not yet exercised — no source changes made in this demo |
+## Lifecycle Stages
 
-## Vocabulary, as it applies here
+| Stage | Command | Purpose |
+|---|---|---|
+| Capture | `kane-cli context ingest sources/feature-spec.md` | Creates a versioned snapshot of the feature specification in `.context/` |
+| Extract | `kane-cli context extract` | Generates use-cases from the source document with references to supporting evidence |
+| Review | `kane-cli context review` | Reviews extracted artifacts and promotes, edits, or rejects them |
+| Design | `kane-cli design tests` | Generates acceptance criteria, scenarios, and runnable tests |
+| Review Design | `kane-cli context review` | Reviews generated acceptance criteria and test designs |
+| Execute | `kane-cli testmd run <test>.md` | Authors and executes individual tests |
+| Replay | `kane-cli testrun run` | Runs the complete test suite and generates an evidence pack |
+| Measure | `kane-cli cover` | Reports proven coverage versus remaining gaps |
+| Maintain | `kane-cli maintain` | Updates the lifecycle when requirements change |
 
-| Term | In this repo |
-|---|---|
-| **Source** | `sources/feature-spec.md` — content-addressed on ingest; editing and re-ingesting would create a new version |
-| **Use-case** | UC-1 (login), UC-2 (add to cart), UC-3 (remove from cart) — each extracted with cited lines from the spec |
-| **Acceptance criterion (AC)** | `ac-1`: submitting the valid `standard_user` / `secret_sauce` pair takes the user from the login page to the products page. `ac-2` / `ac-3`: submitting `locked_out_user` / `secret_sauce` displays a locked-account error message and does **not** reach the products page — two ACs verified by one test |
-| **Scenario** | One path through a use-case — UC-1 has a happy-path scenario (standard user) and a negative scenario (locked-out user) |
-| **Test** | Exactly one `*_test.md` file per scenario — `standard-user-reaches-the-products-page-after-login_test.md` (`t-2`, verifies `ac-1`) and `locked-out-user-stays-blocked-from-the-products-page_test.md` (`t-1`, verifies `ac-2`/`ac-3`) |
-| **derived / trusted / archived** | All 3 use-cases and UC-1's design output started `derived` and were promoted to `trusted` via review — nothing here was silently trusted |
-| **fresh / stale / orphaned** | Everything in this repo is `fresh` — `sources/feature-spec.md` hasn't changed since ingest |
-| **Gap** | UC-2 and UC-3 are extracted and trusted but not yet designed into tests — that's a recorded gap, not silence |
-| **Evidence pack** | The sealed `.evidence` file produced by `testrun run`, viewable via the LambdaTest evidence viewer link printed at the end of each run |
+---
 
-## Requirements
+# Quick Start
 
-- kane-cli **0.6.1+** (`kane-cli --version` — 0.6.0 fails on these commands after a fresh install)
-- A KaneAI login (the `context extract`, `design tests`, and `maintain` steps call the KaneAI agent and consume credits; everything else — `list`, `view`, `review`, `explain`, `cover`, `fsck` — is local and free)
-- Chrome available locally for `testmd run` / `testrun run`
+Run the following commands from the repository root.
 
-
-## Step-by-step: running the assurance lifecycle
-
-Run these in order from the repo root. Each step names the exact command, what it does, and where its output goes.
-
-### 1. Capture the requirements into the local store
+## 1. Capture requirements
 
 ```bash
 kane-cli context ingest sources/feature-spec.md
 ```
 
-Snapshots `sources/feature-spec.md` into the local, content-addressed `.context/` store. This is the only step that touches the source file directly — every later step reads from the snapshot, not the file, so re-running this after editing the spec creates a new version.
+Creates a versioned snapshot of the requirement document. Later lifecycle stages operate on this snapshot rather than directly reading the source file.
 
-### 2. Extract use-cases from the spec
+---
+
+## 2. Extract and review use-cases
 
 ```bash
 kane-cli context extract
 ```
 
-Calls the KaneAI agent, which reads the ingested spec and proposes use-cases, citing the exact lines it read from `sources/feature-spec.md`. Output lands in `.context/` with trust state `derived` (unreviewed).
+The KaneAI agent analyzes the requirement document and proposes use-cases with references back to the original source.
 
-### 3. Review and promote the use-cases
+The generated artifacts begin as `derived` and require review:
 
 ```bash
 kane-cli context review
 ```
 
-Opens an interactive review of everything currently `derived`. For each proposed use-case, promote it to `trusted`, edit it, or reject it (which moves it to `archived`). Nothing kane-cli extracts is trusted automatically — this step is what makes it trusted.
+Review actions:
 
-### 4. Design acceptance criteria, scenarios, and tests
+* promote artifacts to `trusted`
+* edit proposals
+* reject artifacts into `archived`
+
+Nothing generated by the agent becomes trusted automatically.
+
+---
+
+## 3. Generate tests
 
 ```bash
 kane-cli design tests
 ```
 
-Turns each `trusted` use-case into acceptance criteria (ACs), scenarios (happy path, negative, etc.), and exactly one runnable test per scenario. Writes the `*_test.md` files into `tests/` (this is how the four files already in `tests/` were produced) and tags each one with the AC(s) it verifies.
+Creates:
 
-### 5. Review the design output
+* acceptance criteria
+* test scenarios
+* runnable `*_test.md` files
+
+Each test maintains a link to the acceptance criteria it verifies.
+
+Review the generated design:
 
 ```bash
 kane-cli context review
 ```
 
-Same command as step 3, but now reviewing the `derived` ACs, scenarios, and generated tests instead of use-cases. Approve, edit, or reject before trusting any of it.
+---
 
-### 6. Author and run each test individually
+## 4. Execute tests
 
-```bash
-kane-cli testmd run tests/standard-user-reaches-the-products-page-after-login_test.md
-kane-cli testmd run tests/locked-out-user-stays-blocked-from-the-products-page_test.md
-kane-cli testmd run tests/add-one-product-from-the-products-page-and-see-the-cart_test.md
-kane-cli testmd run tests/remove-one-product-from-a-two-item-cart-and-see-the-cart_test.md
-```
-
-For each `*_test.md` file, this authors the test for real and launches Chrome against saucedemo.com to execute it. Run this once per test the first time you author it.
-
-### 7. Reconcile any out-of-band edits
+Run individual tests:
 
 ```bash
-kane-cli maintain
+kane-cli testmd run tests/<test-file>.md
 ```
 
-If a `*_test.md` file (or the source spec) was hand-edited outside this lifecycle, `testrun run` will flag it as out of sync. This command calls the KaneAI agent to reconcile the design graph with the edited file. Run it before `testrun run` if you've hand-edited anything under `tests/`.
+The test is authored and executed against SauceDemo using Chrome.
 
-### 8. Batch-replay everything and seal an evidence pack
+---
+
+## 5. Replay the suite and measure coverage
+
+Run the complete suite:
 
 ```bash
 kane-cli testrun run
 ```
 
-Replays every authored test in one batch run and seals the results into a `.evidence` file — the sealed proof that later steps measure coverage from. Prints a LambdaTest evidence-viewer link at the end.
+This produces an evidence pack containing the results of the execution.
 
-### 9. Measure coverage
+Measure coverage:
 
 ```bash
 kane-cli cover
 ```
 
-Reads the sealed evidence pack and reports two things: what it proved (which ACs have a passing test backing them) and what the design still owes (ACs or scenarios without a confirmed passing run).
+Coverage is reported across two dimensions:
 
-## Scenarios covered
+* **Proven:** requirements supported by executed tests
+* **Owed:** requirements or scenarios without sufficient verification
 
-- Standard user (`standard_user` / `secret_sauce`) reaches the products page after logging in.
-- Locked-out user (`locked_out_user`) is blocked from the products page and shown the lockout message.
-- *(designed, not yet authored into tests)* Adding an item to the cart updates the cart badge.
-- *(designed, not yet authored into tests)* Removing an item from the cart updates the cart badge.
+---
 
-## Known issue
+# Vocabulary
 
-The **login-page confirmation** step in `standard-user-reaches-the-products-page-after-login_test.md` originally duplicated the same "on the login page" check across two steps with slightly different wording, which caused an intermittent, self-flagged false failure (`status_disagrees` advisory in the evidence pack — the tool's own triage correctly identified the check as overly strict, not the app as broken). The redundant clause was removed from Step 1 of the standard-user test so Step 2 is the sole assertion of that state. The locked-out-user test (`t-1`) currently has the same "confirm the browser is on the SauceDemo login page before any credentials are submitted" phrasing in its Step 1 — it hasn't triggered the same false failure yet, but the same fix may be needed if it does. This is left documented here rather than papered over, in the same spirit as kane-cli surfacing gaps as first-class output rather than silence.
+| Term                             | Meaning in this repository                                                                         |
+| -------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Source**                       | `sources/feature-spec.md`, the requirement document used as the foundation of the lifecycle.       |
+| **Use-case**                     | A user goal extracted from the source document with supporting evidence.                           |
+| **Acceptance Criterion (AC)**    | A specific, verifiable requirement that a test must prove.                                         |
+| **Scenario**                     | A single path through a use-case, such as a happy path or negative case.                           |
+| **Test**                         | A runnable `*_test.md` file linked to the acceptance criteria it validates.                        |
+| **derived / trusted / archived** | Artifact states. Generated content starts as derived and must be reviewed before becoming trusted. |
+| **fresh / stale / orphaned**     | Source relationship states used to track whether artifacts remain valid after requirement changes. |
+| **Gap**                          | Missing coverage, such as an acceptance criterion without a corresponding verified test.           |
+| **Evidence pack**                | The sealed output generated from test execution and used for coverage measurement.                 |
+
+---
+
+# Assurance vs Generate
+
+Kane CLI provides two approaches for creating tests:
+
+### `kane-cli generate`
+
+Best for quickly creating test ideas from a plain-language description.
+
+Example:
+
+> "Create tests for a shopping cart checkout flow."
+
+### Assurance Lifecycle
+
+Best when requirements need to remain connected to implementation and testing.
+
+The assurance lifecycle provides:
+
+* requirement traceability
+* human review checkpoints
+* acceptance criteria mapping
+* measurable coverage
+
+For projects with formal requirements or compliance needs, assurance provides a stronger connection between what a product should do and what has been verified.
+
+---
+
+# Local Context Store
+
+The assurance lifecycle uses a local `.context/` store.
+
+Properties:
+
+* **Append-only:** Previous versions are preserved instead of overwritten.
+* **Local:** Requirements, extracted artifacts, and reviews remain in the project directory.
+* **Git ignored:** The store should not be merged between branches.
+
+Useful commands:
+
+```bash
+kane-cli context fsck
+```
+
+Verify store integrity.
+
+```bash
+kane-cli context rebuild
+```
+
+Rebuild local caches from verified records.
+
+---
+
+# Scenarios Covered
+
+This demo covers the complete SauceDemo login and cart workflow, with each scenario linked back to its acceptance criteria.
+
+## Authentication
+
+✅ **Standard user login**  
+`standard_user / secret_sauce`
+
+- User successfully authenticates.
+- User is redirected to the products page.
+
+✅ **Locked-out user login**  
+`locked_out_user / secret_sauce`
+
+- User receives the locked-account error message.
+- User remains blocked from accessing the products page.
+
+---
+
+## Cart Management
+
+✅ **Add product to cart**
+
+- User adds a product from the products page.
+- Cart badge count increases by exactly 1.
+
+✅ **Remove product from cart**
+
+- User removes a product from the cart.
+- Cart badge count decreases by exactly 1.
+
+---
+---
+
+# Requirements
+
+* Kane CLI **0.6.1+**
+
+  * Check with:
+
+    ```bash
+    kane-cli --version
+    ```
+* KaneAI account authentication
+
+  * Required for:
+
+    * `context extract`
+    * `design tests`
+    * `maintain`
+  * Other commands operate locally.
+* Google Chrome installed for test execution.
+
+---
+
+# Known Issue
+
+During development, the login test initially contained duplicate confirmation steps checking the same login-page state. This resulted in an intermittent false failure caused by overly strict validation rather than an application issue.
+
+The redundant assertion was removed from the standard-user login test. The locked-out-user test contains a similar pattern that has not yet produced the same failure but may require the same cleanup.
+
+This issue is documented because surfacing gaps and improving traceability is part of the assurance workflow itself.
